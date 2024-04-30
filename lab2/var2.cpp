@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cassert>
+#include <stack>
 using namespace std;
 
 struct Node {
@@ -69,49 +70,88 @@ int getBalance(Node* N) {
     return height(N->left) - height(N->right);
 }
 
-Node* insert(Node* node, string key) {
-    /* 1. выполнить стандартное вставку BST */
-    if (node == NULL)
-        return (newNode(key));
 
-    if (key < node->key)
-        node->left = insert(node->left, key);
-    else if (key > node->key)
-        node->right = insert(node->right, key);
-    else  // равные ключи не допускаются в BST
-        return node;
+Node* insert(Node* root, string key) {
+    stack<Node*> path;
+    Node* current = root;
+    Node* lastNode = NULL;
 
-    /* 2. обновить высоту этого предка узла */
-    node->height = 1 + max(height(node->left), height(node->right));
-
-    /* 3. получить баланс-фактор этого предка узла, чтобы проверить, стал ли этот узел несбалансированным */
-    int balance = getBalance(node);
-
-    // если этот узел становится несбалансированным, то есть 4 случая
-
-    // случай влево влево
-    if (balance > 1 && key < node->left->key)
-        return rightRotate(node);
-
-    // случай вправо вправо
-    if (balance < -1 && key > node->right->key)
-        return leftRotate(node);
-
-    // случай влево вправо
-    if (balance > 1 && key > node->left->key) {
-        node->left = leftRotate(node->left);
-        return rightRotate(node);
+    // Проходим вниз по дереву и сохраняем путь
+    while (current != NULL) {
+        path.push(current);
+        lastNode = current;
+        if (key < current->key) {
+            current = current->left;
+        }
+        else if (key > current->key) {
+            current = current->right;
+        }
+        else {
+            // равные ключи не допускаются в BST
+            return root;
+        }
     }
 
-    // случай вправо влево
-    if (balance < -1 && key < node->right->key) {
-        node->right = rightRotate(node->right);
-        return leftRotate(node);
+    // Создаем и вставляем новый узел
+    Node* newNode = new Node();
+    newNode->key = key;  // Устанавливаем ключ для нового узла
+    if (lastNode == NULL) {
+        root = newNode;
+    }
+    else if (key < lastNode->key) {
+        lastNode->left = newNode;
+    }
+    else {
+        lastNode->right = newNode;
+    }
+    path.push(newNode);
+
+    // Балансируем дерево, проходясь вверх по сохраненному пути
+    while (!path.empty()) {
+        Node* node = path.top();
+        path.pop();
+
+        // Обновляем высоту узла
+        node->height = 1 + max(height(node->left), height(node->right));
+
+        // Получаем баланс-фактор узла
+        int balance = getBalance(node);
+
+        // Если узел несбалансирован, выполняем соответствующий поворот
+        if (balance > 1) {
+            if (getBalance(node->left) >= 0) {
+                node = rightRotate(node);
+            }
+            else {
+                node->left = leftRotate(node->left);
+                node = rightRotate(node);
+            }
+        }
+        else if (balance < -1) {
+            if (getBalance(node->right) <= 0) {
+                node = leftRotate(node);
+            }
+            else {
+                node->right = rightRotate(node->right);
+                node = leftRotate(node);
+            }
+        }
+
+        // Если мы в корне, обновляем корень
+        if (path.empty()) {
+            root = node;
+        }
+        else if (node->key < path.top()->key) {
+            path.top()->left = node;
+        }
+        else {
+            path.top()->right = node;
+        }
     }
 
-    /* возвращаем неизмененный указатель на узел */
-    return node;
+    return root;
 }
+
 
 // Функция для поиска узла с минимальным ключом в поддереве с заданным корнем
 Node* minValueNode(Node* node) {
@@ -127,80 +167,92 @@ Node* minValueNode(Node* node) {
 // функция для удаления узла с заданным ключом из поддерева с заданным корнем.
 // возвращает корень нового поддерева.
 Node* deleteNode(Node* root, string key) {
-    // шаг 1: выполнить стандартное удаление BST
-    if (root == NULL)
-        return root;
+    stack<Node*> path;
+    Node* current = root;
+    Node* lastNode = NULL;
 
-    // если удаляемый ключ меньше ключа корня, то он находится в левом поддереве
-    if (key < root->key)
-        root->left = deleteNode(root->left, key);
-
-    // если удаляемый ключ больше ключа корня, то он находится в правом поддереве
-    else if (key > root->key)
-        root->right = deleteNode(root->right, key);
-
-    // если удаляемый ключ равен ключу корня, то это узел, который нужно удалить
-    else {
-        // узел с только одним или без дочернего узла
-        if ((root->left == NULL) || (root->right == NULL)) {
-            Node* temp = root->left ? root->left : root->right;
-
-            // нет дочерних узлов
-            if (temp == NULL) {
-                temp = root;
-                root = NULL;
-            }
-            else  // один дочерний узел
-                *root = *temp;  // копировать содержимое не пустого дочернего узла
-            free(temp);
+    // Проходим вниз по дереву и сохраняем путь
+    while (current != NULL && current->key != key) {
+        path.push(current);
+        lastNode = current;
+        if (key < current->key) {
+            current = current->left;
         }
         else {
-            // узел с двумя дочерними узлами: получить узел со следующим (самым маленьким)
-            // ключом в правом поддереве
-            Node* temp = minValueNode(root->right);
-
-            // скопировать содержимое узла-наследника в этот узел
-            root->key = temp->key;
-
-            // удалить узел-наследника
-            root->right = deleteNode(root->right, temp->key);
+            current = current->right;
         }
     }
 
-    // если дерево имело только один узел, то вернуть его
-    if (root == NULL)
+    // Если узел не найден, возвращаем корень без изменений
+    if (current == NULL) {
         return root;
-
-    // шаг 2: обновить высоту текущего узла
-    root->height = 1 + max(height(root->left), height(root->right));
-
-    // шаг 3: получить баланс-фактор узла (проверить, стал ли этот узел несбалансированным)
-    int balance = getBalance(root);
-
-    // если этот узел становится несбалансированным, то есть 4 случая
-
-    // случай влево влево
-    if (balance > 1 && getBalance(root->left) >= 0)
-        return rightRotate(root);
-
-    // случай влево вправо
-    if (balance > 1 && getBalance(root->left) < 0) {
-        root->left = leftRotate(root->left);
-        return rightRotate(root);
     }
 
-    // случай вправо вправо
-    if (balance < -1 && getBalance(root->right) <= 0)
-        return leftRotate(root);
+    // Удаляем найденный узел
+    if (current->left == NULL || current->right == NULL) {
+        Node* temp = current->left ? current->left : current->right;
+        if (lastNode == NULL) {
+            root = temp;
+        }
+        else if (lastNode->left == current) {
+            lastNode->left = temp;
+        }
+        else {
+            lastNode->right = temp;
+        }
+    }
+    else {
+        Node* successor = minValueNode(current->right);
+        current->key = successor->key;
+        current->right = deleteNode(current->right, successor->key);
+    }
 
-    // случай вправо влево
-    if (balance < -1 && getBalance(root->right) > 0) {
-        root->right = rightRotate(root->right);
-        return leftRotate(root);
+    // Балансируем дерево, проходясь вверх по сохраненному пути
+    while (!path.empty()) {
+        Node* node = path.top();
+        path.pop();
+
+        // Обновляем высоту узла
+        node->height = 1 + max(height(node->left), height(node->right));
+
+        // Получаем баланс-фактор узла
+        int balance = getBalance(node);
+
+        // Если узел несбалансирован, выполняем соответствующий поворот
+        if (balance > 1) {
+            if (getBalance(node->left) >= 0) {
+                node = rightRotate(node);
+            }
+            else {
+                node->left = leftRotate(node->left);
+                node = rightRotate(node);
+            }
+        }
+        else if (balance < -1) {
+            if (getBalance(node->right) <= 0) {
+                node = leftRotate(node);
+            }
+            else {
+                node->right = rightRotate(node->right);
+                node = leftRotate(node);
+            }
+        }
+
+        // Если мы в корне, обновляем корень
+        if (path.empty()) {
+            root = node;
+        }
+        else if (node->key < path.top()->key) {
+            path.top()->left = node;
+        }
+        else {
+            path.top()->right = node;
+        }
     }
 
     return root;
 }
+
 
 // Функция для печати бинарного дерева (прямой обход)
 void printTree(Node* root, string indent = "", bool isLeft = true) {
