@@ -6,23 +6,24 @@
 #include <string.h>
 #include <assert.h>
 
+// Определение структуры Node для представления узла в бинарном дереве поиска.
 struct Node {
-    char* key;
-    struct Node* left;
-    struct Node* right;
-    struct Node* parent;
-    int height;
+    char* key; // Ключ узла, который определяет его позицию в дереве.
+    struct Node* left; // Указатель на левого потомка узла.
+    struct Node* right; // Указатель на правого потомка узла.
+    struct Node* parent; // Указатель на родительский узел.
+    int height; // Высота узла в дереве.
 };
 
-struct Node* newNode(char* key) {
-    struct Node* node = (struct Node*)malloc(sizeof(struct Node));
-    node->key = _strdup(key);
-    node->left = NULL;
-    node->right = NULL;
-    node->height = 1;
-    return node;
+// Функция для создания нового узла с заданным ключом.
+struct Node* newNode(const char* key) {
+    struct Node* node = (struct Node*)malloc(sizeof(struct Node)); // Выделение памяти под новый узел.
+    node->key = _strdup(key); // Копирование ключа в узел.
+    node->left = NULL; // Установка левого потомка узла в NULL.
+    node->right = NULL; // Установка правого потомка узла в NULL.
+    node->height = 1; // Установка высоты узла равной 1, так как узел является листом без потомков.
+    return node; // Возвращение указателя на новый узел.
 }
-
 int height(struct Node* N) {
     if (N == NULL)
         return 0;
@@ -72,36 +73,37 @@ int getBalance(struct Node* N) {
     return height(N->left) - height(N->right);
 }
 
-struct Node* insert(struct Node* root, char* key) {
-    if (root == NULL) {
-        return newNode(key);
+// Функция для вставки нового узла с заданным ключом в бинарное дерево поиска.
+struct Node* insert(struct Node* root, const char* key) {
+    if (root == NULL) { // Если дерево пусто,
+        return newNode(key); // создаем новый узел с заданным ключом.
     }
-    if (strcmp(key, root->key) < 0) {
-        root->left = insert(root->left, key);
+    if (strcmp(key, root->key) < 0) { // Если заданный ключ меньше ключа корня,
+        root->left = insert(root->left, key); // вставляем новый узел в левое поддерево.
     }
-    else if (strcmp(key, root->key) > 0) {
-        root->right = insert(root->right, key);
+    else if (strcmp(key, root->key) > 0) { // Если заданный ключ больше ключа корня,
+        root->right = insert(root->right, key); // вставляем новый узел в правое поддерево.
     }
-    else {
-        return root;
+    else { // Если ключи равны,
+        return root; // возвращаем корень без изменений.
     }
-    root->height = 1 + Max(height(root->left), height(root->right));
-    int balance = getBalance(root);
-    if (balance > 1 && strcmp(key, root->left->key) < 0) {
-        return rightRotate(root);
+    root->height = 1 + Max(height(root->left), height(root->right)); // Обновляем высоту корня.
+    int balance = getBalance(root); // Получаем баланс-фактор корня.
+    if (balance > 1 && strcmp(key, root->left->key) < 0) { // Если корень несбалансирован и ключ меньше ключа левого потомка корня,
+        return rightRotate(root); // выполняем правый поворот.
     }
-    if (balance < -1 && strcmp(key, root->right->key) > 0) {
-        return leftRotate(root);
+    if (balance < -1 && strcmp(key, root->right->key) > 0) { // Если корень несбалансирован и ключ больше ключа правого потомка корня,
+        return leftRotate(root); // выполняем левый поворот.
     }
-    if (balance > 1 && strcmp(key, root->left->key) > 0) {
-        root->left = leftRotate(root->left);
-        return rightRotate(root);
+    if (balance > 1 && strcmp(key, root->left->key) > 0) { // Если корень несбалансирован, ключ больше ключа левого потомка корня,
+        root->left = leftRotate(root->left); // выполняем левый поворот для левого потомка,
+        return rightRotate(root); // затем выполняем правый поворот для корня.
     }
-    if (balance < -1 && strcmp(key, root->right->key) < 0) {
-        root->right = rightRotate(root->right);
-        return leftRotate(root);
+    if (balance < -1 && strcmp(key, root->right->key) < 0) { // Если корень несбалансирован, ключ меньше ключа правого потомка корня,
+        root->right = rightRotate(root->right); // выполняем правый поворот для правого потомка,
+        return leftRotate(root); // затем выполняем левый поворот для корня.
     }
-    return root;
+    return root; // Возвращаем новый корень.
 }
 
 // Функция для поиска узла с минимальным ключом в поддереве с заданным корнем
@@ -117,7 +119,7 @@ struct Node* minValueNode(struct Node* node) {
 
 // функция для удаления узла с заданным ключом из поддерева с заданным корнем.
 // возвращает корень нового поддерева.
-struct Node* deleteNode(struct Node* root, char* key) {
+struct Node* deleteNode(struct Node* root, const char* key) {
     struct Node* path[1000];
     int path_length = 0;
     struct Node* current = root;
@@ -221,60 +223,214 @@ void printTree(struct Node* root, int indent, int isLeft) {
         printTree(root->right, indent + 1, 0);
     }
 }
-void test_complex_operations() {
+#include <assert.h>
+#include <string.h>
+
+void test_tree() {
     struct Node* root = NULL;
 
-    // Последовательно добавляем узлы
+    // Добавляем узлы в дерево и проверяем, что они добавляются правильно
     root = insert(root, "A");
     assert(strcmp(root->key, "A") == 0);
+    assert(root->height == 1);
 
     root = insert(root, "B");
     assert(strcmp(root->key, "A") == 0);
+    assert(root->height == 2);
     assert(strcmp(root->right->key, "B") == 0);
 
     root = insert(root, "C");
     assert(strcmp(root->key, "B") == 0);
+    assert(root->height == 2);
     assert(strcmp(root->left->key, "A") == 0);
     assert(strcmp(root->right->key, "C") == 0);
 
-    root = insert(root, "G");
+    root = insert(root, "D");
+    assert(strcmp(root->key, "B") == 0);
+    assert(root->height == 3);
+    assert(strcmp(root->left->key, "A") == 0);
+    assert(strcmp(root->right->key, "C") == 0);
+    assert(strcmp(root->right->right->key, "D") == 0);
+
+    root = insert(root, "E");
+    assert(strcmp(root->key, "B") == 0);
+    assert(root->height == 3);
+    assert(strcmp(root->left->key, "A") == 0);
+    assert(strcmp(root->right->key, "D") == 0);
+    assert(strcmp(root->right->left->key, "C") == 0);
+    assert(strcmp(root->right->right->key, "E") == 0);
+
     root = insert(root, "F");
+    assert(strcmp(root->key, "D") == 0);
+    assert(root->height == 3);
+    assert(strcmp(root->left->key, "B") == 0);
+    assert(strcmp(root->left->left->key, "A") == 0);
+    assert(strcmp(root->left->right->key, "C") == 0);
+    assert(strcmp(root->right->key, "E") == 0);
+    assert(strcmp(root->right->right->key, "F") == 0);
+
+    root = insert(root, "G");
+    assert(strcmp(root->key, "D") == 0);
+    assert(root->height == 3);
+    assert(strcmp(root->left->key, "B") == 0);
+    assert(strcmp(root->left->left->key, "A") == 0);
+    assert(strcmp(root->left->right->key, "C") == 0);
+    assert(strcmp(root->right->key, "F") == 0);
+    assert(strcmp(root->right->left->key, "E") == 0);
+    assert(strcmp(root->right->right->key, "G") == 0);
+
     root = insert(root, "H");
+    assert(strcmp(root->key, "D") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "B") == 0);
+    assert(strcmp(root->left->left->key, "A") == 0);
+    assert(strcmp(root->left->right->key, "C") == 0);
+    assert(strcmp(root->right->key, "F") == 0);
+    assert(strcmp(root->right->left->key, "E") == 0);
+    assert(strcmp(root->right->right->key, "G") == 0);
+    assert(strcmp(root->right->right->right->key, "H") == 0);
+
+    // Продолжаем добавлять узлы и проверяем, что дерево корректно балансируется
     root = insert(root, "I");
+    assert(strcmp(root->key, "D") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "B") == 0);
+    assert(strcmp(root->left->left->key, "A") == 0);
+    assert(strcmp(root->left->right->key, "C") == 0);
+    assert(strcmp(root->right->key, "F") == 0);
+    assert(strcmp(root->right->left->key, "E") == 0);
+    assert(strcmp(root->right->right->key, "H") == 0);
+    assert(strcmp(root->right->right->left->key, "G") == 0);
+    assert(strcmp(root->right->right->right->key, "I") == 0);
+
     root = insert(root, "J");
-    root = insert(root, "k");
-    root = insert(root, "l");
-    root = insert(root, "m");
-    root = insert(root, "n");
+    assert(strcmp(root->key, "D") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "B") == 0);
+    assert(strcmp(root->left->left->key, "A") == 0);
+    assert(strcmp(root->left->right->key, "C") == 0);
+    assert(strcmp(root->right->key, "H") == 0);
+    assert(strcmp(root->right->left->key, "F") == 0);
+    assert(strcmp(root->right->left->left->key, "E") == 0);
+    assert(strcmp(root->right->left->right->key, "G") == 0);
+    assert(strcmp(root->right->right->key, "I") == 0);
+    assert(strcmp(root->right->right->right->key, "J") == 0);
 
-    // Проверяем структуру дерева после добавления всех узлов
-    assert(strcmp(root->key, "J") == 0);
-    assert(strcmp(root->left->key, "F") == 0);
-    assert(strcmp(root->right->key, "l") == 0);
+    root = insert(root, "K");
+    assert(strcmp(root->key, "D") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "B") == 0);
+    assert(strcmp(root->left->left->key, "A") == 0);
+    assert(strcmp(root->left->right->key, "C") == 0);
+    assert(strcmp(root->right->key, "H") == 0);
+    assert(strcmp(root->right->left->key, "F") == 0);
+    assert(strcmp(root->right->left->left->key, "E") == 0);
+    assert(strcmp(root->right->left->right->key, "G") == 0);
+    assert(strcmp(root->right->right->key, "J") == 0);
+    assert(strcmp(root->right->right->left->key, "I") == 0);
+    assert(strcmp(root->right->right->right->key, "K") == 0);
 
-    // Последовательно удаляем узлы
+    root = insert(root, "L");
+    assert(strcmp(root->key, "H") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "D") == 0);
+    assert(strcmp(root->left->left->key, "B") == 0);
+    assert(strcmp(root->left->left->left->key, "A") == 0);
+    assert(strcmp(root->left->left->right->key, "C") == 0);
+    assert(strcmp(root->left->right->key, "F") == 0);
+    assert(strcmp(root->left->right->left->key, "E") == 0);
+    assert(strcmp(root->left->right->right->key, "G") == 0);
+    assert(strcmp(root->right->key, "J") == 0);
+    assert(strcmp(root->right->left->key, "I") == 0);
+    assert(strcmp(root->right->right->key, "K") == 0);
+    assert(strcmp(root->right->right->right->key, "L") == 0);
+
+    root = insert(root, "M");
+    assert(strcmp(root->key, "H") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "D") == 0);
+    assert(strcmp(root->left->left->key, "B") == 0);
+    assert(strcmp(root->left->left->left->key, "A") == 0);
+    assert(strcmp(root->left->left->right->key, "C") == 0);
+    assert(strcmp(root->left->right->key, "F") == 0);
+    assert(strcmp(root->left->right->left->key, "E") == 0);
+    assert(strcmp(root->left->right->right->key, "G") == 0);
+    assert(strcmp(root->right->key, "J") == 0);
+    assert(strcmp(root->right->left->key, "I") == 0);
+    assert(strcmp(root->right->right->key, "L") == 0);
+    assert(strcmp(root->right->right->left->key, "K") == 0);
+    assert(strcmp(root->right->right->right->key, "M") == 0);
+
+    root = insert(root, "N");
+    assert(strcmp(root->key, "H") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "D") == 0);
+    assert(strcmp(root->left->left->key, "B") == 0);
+    assert(strcmp(root->left->left->left->key, "A") == 0);
+    assert(strcmp(root->left->left->right->key, "C") == 0);
+    assert(strcmp(root->left->right->key, "F") == 0);
+    assert(strcmp(root->left->right->left->key, "E") == 0);
+    assert(strcmp(root->left->right->right->key, "G") == 0);
+    assert(strcmp(root->right->key, "L") == 0);
+    assert(strcmp(root->right->left->key, "J") == 0);
+    assert(strcmp(root->right->left->right->key, "K") == 0);
+    assert(strcmp(root->right->right->key, "M") == 0);
+    assert(strcmp(root->right->right->right->key, "N") == 0);
+
+    // Удаляем узлы из дерева и проверяем, что они удаляются правильно
+    root = deleteNode(root, "N");
+    assert(strcmp(root->key, "H") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "D") == 0);
+    assert(strcmp(root->left->left->key, "B") == 0);
+    assert(strcmp(root->left->left->left->key, "A") == 0);
+    assert(strcmp(root->left->left->right->key, "C") == 0);
+    assert(strcmp(root->left->right->key, "F") == 0);
+    assert(strcmp(root->left->right->left->key, "E") == 0);
+    assert(strcmp(root->left->right->right->key, "G") == 0);
+    assert(strcmp(root->right->key, "L") == 0);
+    assert(strcmp(root->right->left->key, "J") == 0);
+    assert(strcmp(root->right->left->right->key, "K") == 0);
+    assert(strcmp(root->right->right->key, "M") == 0);
+
     root = deleteNode(root, "H");
-    assert(strcmp(root->key, "J") == 0);
-    assert(root->left->right->right == NULL); // Проверяем, что H удален
+    assert(strcmp(root->key, "I") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "D") == 0);
+    assert(strcmp(root->left->left->key, "B") == 0);
+    assert(strcmp(root->left->left->left->key, "A") == 0);
+    assert(strcmp(root->left->left->right->key, "C") == 0);
+    assert(strcmp(root->left->right->key, "F") == 0);
+    assert(strcmp(root->left->right->left->key, "E") == 0);
+    assert(strcmp(root->left->right->right->key, "G") == 0);
+    assert(strcmp(root->right->key, "L") == 0);
+    assert(strcmp(root->right->left->key, "J") == 0);
+    assert(strcmp(root->right->left->right->key, "K") == 0);
+    assert(strcmp(root->right->right->key, "M") == 0);
 
-    root = deleteNode(root, "B");
-    assert(strcmp(root->left->left->key, "C") == 0); // Проверяем, что B заменен на C
+    root = deleteNode(root, "F");
+    assert(strcmp(root->key, "I") == 0);
+    assert(root->height == 4);
+    assert(strcmp(root->left->key, "D") == 0);
+    assert(strcmp(root->left->left->key, "B") == 0);
+    assert(strcmp(root->left->left->left->key, "A") == 0);
+    assert(strcmp(root->left->left->right->key, "C") == 0);
+    assert(strcmp(root->left->right->key, "G") == 0);
+    assert(strcmp(root->left->right->left->key, "E") == 0);
+    assert(strcmp(root->right->key, "L") == 0);
+    assert(strcmp(root->right->left->key, "J") == 0);
+    assert(strcmp(root->right->left->right->key, "K") == 0);
+    assert(strcmp(root->right->right->key, "M") == 0);
 
-    root = deleteNode(root, "n");
-    assert(root->right->right->right == NULL); // Проверяем, что n удален
 
-    root = deleteNode(root, "J");
-    assert(strcmp(root->key, "k") == 0); // Проверяем, что J заменен на k
-
-    printf("Все тесты пройдены успешно!");
+    printf("All tests passed successfully!\n");
 }
 
 int main() {
-    test_complex_operations();
+    test_tree();
     struct Node* root = NULL;
     char command[10];
     char key[100];
-
     while (1) {
         printf("Enter a command (add/delete) and a key, or 'exit': ");
         scanf("%s", command);
